@@ -5,6 +5,9 @@
 #   "3306:3306"    端口映射，左边是本机访问时用的端口
 #   ./mysql:xxx    目录挂载，左边是项目里的真实目录
 
+# compose 项目名，决定 Docker Desktop 里的分组名；不写会取目录名（这里是 docker）
+name: shopkeeper-agent
+
 services:
   # MySQL：存元数据（表 / 字段 / 指标），同时充当业务数仓
   mysql:
@@ -12,12 +15,10 @@ services:
     container_name: mysql
     restart: unless-stopped                     # 异常退出自动拉起，手动停的不拉
     environment:
-      MYSQL_ROOT_PASSWORD: dili123              # 不设这一项镜像会启动失败
-      # 应用账号，对应 app_config.yaml 里的 db_meta / db_dw。
-      # 仅在这里声明，它对 meta / dw 还没有任何权限，
-      # 授权写在 mysql/01-init-databases.sql 里，两者缺一不可。
-      MYSQL_USER: root
-      MYSQL_PASSWORD: 12345678
+      # 只用 root 一个账号。官方镜像会据此创建 root@'%' 并授予全部权限；
+      # 反过来把 MYSQL_USER 设成 root 会被镜像直接拒绝，导致容器反复重启。
+      # 密码需与 conf/app_config.yaml 的 db_meta / db_dw 保持一致。
+      MYSQL_ROOT_PASSWORD: "12345678"           # 不设这一项镜像会启动失败
     ports:
       - "3306:3306"
     volumes:
