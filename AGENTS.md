@@ -7,3 +7,5 @@
 用户是前端工程师，讲 Python 用 JS/TS 类比；改完代码用 `uv run python` / `uvx pyright` 验证。
 
 新增或修改 AI 约束（本文件及同类规则文件）时遵循「空白优于长篇大论」：能删就删，不写没有信息量的内容。
+
+类型断言优先 `assert isinstance`（运行时校验 + 类型收窄）；`cast` 只用于类型信息在库边界丢失处，单表达式、不 cast 到 `Any`、写明理由；pyright 开 `reportUnnecessaryCast = "warning"`。
