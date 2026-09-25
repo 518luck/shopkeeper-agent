@@ -2,7 +2,7 @@
 # 启动步骤、服务地址与排障见同目录 README.md
 #
 # 下文两种映射的方向统一是「左 = 宿主机，右 = 容器」：
-#   "3306:3306"    端口映射，左边是本机访问时用的端口
+#   "13306:3306"   端口映射，左边是本机访问时用的端口
 #   ./mysql:xxx    目录挂载，左边是项目里的真实目录
 
 # compose 项目名，决定 Docker Desktop 里的分组名；不写会取目录名（这里是 docker）
@@ -20,7 +20,9 @@ services:
       # 密码需与 conf/app_config.yaml 的 db_meta / db_dw 保持一致。
       MYSQL_ROOT_PASSWORD: "12345678"           # 不设这一项镜像会启动失败
     ports:
-      - "3306:3306"
+      # 本机 13306 → 容器 3306。容器里的 MySQL 固定在 3306 监听，只有左边能改；
+      # 换端口是为了避让本机或其他项目的 MySQL 占用的 3306。
+      - "13306:3306"
     volumes:
       - mysql_data:/var/lib/mysql               # 数据持久化，删容器不丢数据
       - ./mysql:/docker-entrypoint-initdb.d     # 首次启动自动执行其中的建库脚本

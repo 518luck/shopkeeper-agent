@@ -19,7 +19,7 @@ logging:
 # 元数据库：存「数仓长什么样」的描述信息（表 / 字段 / 指标）
 db_meta:
   host: localhost                       # 走 Docker 端口映射，故为 localhost
-  port: 3306
+  port: 13306                           # ! 必须是 docker-compose.yaml 里映射的宿主机端口
   user: root
   password: "12345678"
   database: meta
@@ -28,7 +28,7 @@ db_meta:
 # 除 database 外，其余字段应与 db_meta 保持一致
 db_dw:
   host: localhost
-  port: 3306
+  port: 13306                          # 与 db_meta 保持一致
   user: root
   password: "12345678"
   database: dw
