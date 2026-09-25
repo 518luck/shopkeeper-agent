@@ -1,3 +1,5 @@
+# Qdrant 客户端管理器：创建并复用指向本机 Qdrant 的异步客户端。
+
 import asyncio
 import random
 
@@ -7,61 +9,55 @@ from app.conf.app_config import QdrantConfig, app_config
 
 
 class QdrantClientManager:
+    """Qdrant 异步客户端的创建、复用与关闭。"""
+
     def __init__(self, qdrant_config: QdrantConfig):
-        # 保存配置对象，后面初始化客户端时要从这里读取 host 和 port
         self.qdrant_config = qdrant_config
-        # 先用私有属性声明出来，真正初始化放到 init() 中进行
+        # 客户端在 init() 中创建，构造阶段不建立外部连接
         self._client: AsyncQdrantClient | None = None
 
     @property
     def client(self) -> AsyncQdrantClient:
-        # 对外暴露的客户端一定是已初始化的：断言既能让类型检查器收窄掉 None，
-        # 也能把“忘记调用 init()”从难懂的 AttributeError 变成明确的报错
+        """已初始化的客户端；未调用 init() 时报错。"""
         assert self._client is not None, "Qdrant 客户端尚未初始化，请先调用 init()"
         return self._client
 
     def _get_url(self):
-        # 根据配置文件拼出 Qdrant 服务地址
+        """拼出 Qdrant 服务地址。"""
         return f"http://{self.qdrant_config.host}:{self.qdrant_config.port}"
 
     def init(self):
-        # 创建异步客户端
-        # 这里不在 __init__ 中直接初始化，是为了和项目的生命周期管理保持一致
+        """创建异步客户端，在应用启动阶段调用。"""
         self._client = AsyncQdrantClient(url=self._get_url())
 
     async def close(self):
-        # 项目关闭时统一关闭客户端连接；没初始化过就什么都不做，允许重复调用
+        """关闭客户端；未初始化时什么都不做，可重复调用。"""
         if self._client is not None:
             await self._client.close()
 
 
-# 创建一个全局的管理器对象
-# 后续项目中的其他模块都通过它来获取同一套 Qdrant 客户端
+# 全局单例，供其他模块复用同一套客户端
 qdrant_client_manager = QdrantClientManager(app_config.qdrant)
 
 
 if __name__ == "__main__":
-    # 先初始化客户端，后面的测试逻辑才能真正访问 Qdrant
     qdrant_client_manager.init()
 
     async def test():
-        # 取出真正的 Qdrant 异步客户端
+        """最小验证：建集合、写入 100 个随机点、做一次相似度检索。"""
         client = qdrant_client_manager.client
 
-        # 如果集合不存在，就先创建一个集合
+        # 集合不存在才创建，避免重复运行时冲突
         if not await client.collection_exists("my_collection"):
             await client.create_collection(
                 collection_name="my_collection",
+                # 10 维 + 余弦距离；演示用，真实项目维度需与 embedding 模型一致
                 vectors_config=models.VectorParams(
-                    # 当前集合中的向量维度是 10
                     size=10,
-                    # 使用余弦相似度作为距离计算方式
                     distance=models.Distance.COSINE,
                 ),
             )
 
-        # 向集合中写入 100 个随机 point
-        # 每个 point 都有一个 id 和一个 10 维向量
         await client.upsert(
             collection_name="my_collection",
             points=[
@@ -73,18 +69,13 @@ if __name__ == "__main__":
             ],
         )
 
-        # 用一个随机生成的查询向量做相似度检索
-        # limit=10 表示最多返回 10 条结果
-        # score_threshold=0.8 表示只保留分数不低于 0.8 的结果
+        # top-10，只保留分数不低于 0.8 的结果
         res = await client.query_points(
             collection_name="my_collection",
             query=[random.random() for _ in range(10)],  # type: ignore
             limit=10,
             score_threshold=0.8,
         )
-
-        # 打印查询结果，便于观察 point 的 id、score 等信息
         print(res)
 
-    # 运行异步测试函数
     asyncio.run(test())
