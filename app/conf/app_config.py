@@ -83,11 +83,10 @@ class AppConfig:
     llm: LLMConfig
 
 
-# 从当前文件 conf/app_config.py 出发，回到项目根目录
-# 再定位到 conf/app_config.yaml 这个配置文件
-# 注意：本文件在 conf/ 下（两层），所以用 parents[1]；
-# 若按教程挪到 app/conf/ 下（三层），需要改回 parents[2]
-config_file = Path(__file__).parents[1] / "conf" / "app_config.yaml"
+# 从当前文件 app/conf/app_config.py 出发，回到项目根目录
+# 再定位到 conf/app_config.yaml 这个配置文件（源码放 app/，YAML 放根目录 conf/）
+# 注意：本文件在 app/conf/ 下（三层），所以用 parents[2]
+config_file = Path(__file__).parents[2] / "conf" / "app_config.yaml"
 
 # 读取 YAML 配置内容
 context = OmegaConf.load(config_file)

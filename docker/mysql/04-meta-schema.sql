@@ -1,5 +1,8 @@
 -- 元数据表结构：存的不是业务数据，而是"数仓自己长什么样"的描述信息
 -- 表内容由后续章节的同步脚本写入（读取 conf 下的 yaml 配置 + 反查数仓真实结构）
+-- 必须声明客户端编码：容器初始化时的 mysql 客户端默认按 latin1 解释文件字节，
+-- 少了这行，下面 COMMENT 里的中文会被存成乱码
+SET NAMES utf8mb4;
 USE meta;
 
 CREATE TABLE table_info (

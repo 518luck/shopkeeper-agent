@@ -1,4 +1,7 @@
 -- 数仓表结构：4 张维度表 + 1 张事实表（星型模型）
+-- 必须声明客户端编码：容器初始化时的 mysql 客户端默认按 latin1 解释文件字节，
+-- 少了这行，下面 COMMENT 里的中文会被存成乱码（数据本身不受影响，03 脚本已有此行）
+SET NAMES utf8mb4;
 USE dw;
 
 CREATE TABLE dim_region (
