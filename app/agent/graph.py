@@ -1,6 +1,6 @@
 """问数智能体工作流图：注册节点与边，编译成可运行图。
 
-骨架阶段各节点只输出进度，用于验证图能编译、节点能被调度、进度能流式输出。
+节点逻辑按章节逐步补齐，`demo()` 用于在本地把整条链路串起来验证。
 """
 
 import asyncio
@@ -22,6 +22,12 @@ from app.agent.nodes.recall_value import recall_value
 from app.agent.nodes.run_sql import run_sql
 from app.agent.nodes.validate_sql import validate_sql
 from app.agent.state import DataAgentState
+from app.clients.embedding_client_manager import embedding_client_manager
+from app.clients.es_client_manager import es_client_manager
+from app.clients.qdrant_client_manager import qdrant_client_manager
+from app.repositories.es.value_es_repository import ValueESRepository
+from app.repositories.qdrant.column_qdrant_repository import ColumnQdrantRepository
+from app.repositories.qdrant.metric_qdrant_repository import MetricQdrantRepository
 
 # 图构建器：声明共享状态与运行时上下文的 Schema，节点签名和调用方据此做类型检查
 graph_builder = StateGraph(
@@ -70,7 +76,7 @@ graph_builder.add_edge("generate_sql", "validate_sql")
 def route_after_validate(state: DataAgentState) -> str:
     """校验无错误则执行 SQL，有错误则先校正。"""
 
-    return "run_sql" if state.get("error") is None else "correct_sql"
+    return "run_sql" if state["error"] is None else "correct_sql"
 
 
 # 条件边：validate_sql 之后不是固定流转，按校验结果二选一
@@ -89,15 +95,42 @@ graph = graph_builder.compile()
 
 
 async def demo():
-    """跑一次图并打印进度，验证编译、调度顺序和流式输出是否正常。"""
+    """初始化召回依赖并跑一次图，打印各节点写出的进度。"""
 
-    state = DataAgentState(query="统计华北地区的销售总额")
-    context = DataAgentContext()
+    # 字段/指标召回依赖 Qdrant 与 Embedding，字段取值召回依赖 Elasticsearch
+    qdrant_client_manager.init()
+    embedding_client_manager.init()
+    es_client_manager.init()
 
+    column_qdrant_repository = ColumnQdrantRepository(qdrant_client_manager.client)
+    metric_qdrant_repository = MetricQdrantRepository(qdrant_client_manager.client)
+    value_es_repository = ValueESRepository(es_client_manager.client)
+
+    # 入口处把节点会写入的字段先置为空值，后续节点逐步覆盖
+    state = DataAgentState(
+        query="统计华北地区的销售总额",
+        keywords=[],
+        retrieved_column_infos=[],
+        retrieved_metric_infos=[],
+        retrieved_value_infos=[],
+        error=None,
+    )
+    context = DataAgentContext(
+        column_qdrant_repository=column_qdrant_repository,
+        embedding_client=embedding_client_manager.client,
+        metric_qdrant_repository=metric_qdrant_repository,
+        value_es_repository=value_es_repository,
+    )
+
+    # stream_mode="custom" 接收各节点通过 runtime.stream_writer 写出的进度
     async for chunk in graph.astream(
         input=state, context=context, stream_mode="custom"
     ):
         print(chunk)
+
+    # 关闭显式创建的异步客户端，避免本地调试时连接资源悬挂
+    await qdrant_client_manager.close()
+    await es_client_manager.close()
 
 
 if __name__ == "__main__":
