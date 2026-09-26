@@ -1,9 +1,6 @@
-from dotenv import load_dotenv
-
-load_dotenv()
-
 from langchain.chat_models import init_chat_model
 
+# .env 由 app.conf.app_config 在自己的模块顶层加载，早于这里的配置读取
 from app.conf.app_config import app_config
 
 # 统一从配置读取模型三件套，节点只复用 llm，不重复初始化模型连接

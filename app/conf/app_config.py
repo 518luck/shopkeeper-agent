@@ -3,7 +3,13 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+from dotenv import load_dotenv
 from omegaconf import OmegaConf
+
+# ! 必须在下面解析 ${oc.env:LLM_API_KEY} 之前加载 .env：
+#   本模块一被 import，插值就固化成当时的取值，晚调用只会拿到兜底值，调用时报 401。
+#   路径按文件位置定位，避免依赖启动目录。
+load_dotenv(Path(__file__).parents[2] / ".env")
 
 
 @dataclass
