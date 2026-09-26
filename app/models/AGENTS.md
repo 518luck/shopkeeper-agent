@@ -1,6 +1,6 @@
 # app/models
 
-适用：ORM 模型，把元数据库（meta）的表映射成 SQLAlchemy 类。
+适用：ORM 模型，主要对应 MySQL 中的表结构。
 
 ## 必须
 

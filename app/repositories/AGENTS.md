@@ -1,6 +1,6 @@
 # app/repositories
 
-适用：数据访问层，封装 MySQL / Qdrant / ES 的具体读写。
+适用：数据访问层，封装 MySQL / Qdrant / ES 的具体读写逻辑。
 
 ## 必须
 
