@@ -27,7 +27,7 @@
 
 ### ES
 
-- `index_name` 与 `index_mappings` 为类常量。
+- `index_name` 与 `index_mappings` 用 `ClassVar` 声明为类常量。
 - mapping：检索字段用 `text` + 中文分词，标识字段用 `keyword`，`dynamic: false`。
 - 写入用 bulk 的「操作行 + 数据行」交替结构，按 `batch_size` 分批。
 
