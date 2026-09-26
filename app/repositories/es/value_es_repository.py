@@ -16,7 +16,7 @@ from app.entities.value_info import ValueInfo
 
 
 class ValueESRepository:
-    """负责字段取值全文索引的创建与批量写入"""
+    """负责字段取值全文索引的创建 写入和基础检索"""
 
     # 类常量：所有实例共用，实例上不允许再赋值；dict 不加 ClassVar 会被检查器判为可变类属性
     index_name: ClassVar[str] = "value_index"
@@ -59,3 +59,16 @@ class ValueESRepository:
                 )
                 batch_operations.append(asdict(value_info))
             await self.client.bulk(operations=batch_operations)
+
+    async def search(
+        self, keyword: str, score_threshold: float = 0.6, limit: int = 20
+    ) -> list[ValueInfo]:
+        """按关键词全文检索字段取值，并还原为 ValueInfo 实体"""
+        resp = await self.client.search(
+            index=self.index_name,
+            # match 查询只匹配 value 字段：用关键词找库里真实存在的取值
+            query={"match": {"value": keyword}},
+            size=limit,
+            min_score=score_threshold,
+        )
+        return [ValueInfo(**hit["_source"]) for hit in resp["hits"]["hits"]]
