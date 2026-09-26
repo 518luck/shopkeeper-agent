@@ -20,6 +20,7 @@ from app.repositories.qdrant.metric_qdrant_repository import MetricQdrantReposit
 
 
 class MetaKnowledgeService:
+    # 接收入口注入的仓储与客户端并持有，不做业务流程
     def __init__(
         self,
         meta_mysql_repository: MetaMySQLRepository,
@@ -42,6 +43,7 @@ class MetaKnowledgeService:
         # 指标向量单独一个 collection，便于按对象类型独立召回
         self.metric_qdrant_repository: MetricQdrantRepository = metric_qdrant_repository
 
+    # 构建总流程：读配置 → 表链路 → 指标链路
     async def build(self, config_path: Path):
         # 1. 读取配置文件并转换成结构化配置对象
         context = OmegaConf.load(config_path)
@@ -70,6 +72,7 @@ class MetaKnowledgeService:
 
         logger.info("元数据知识库构建完成")
 
+    # 表链路①：配置 + 数仓 → 表/字段实体，写入 Meta MySQL 并返回字段实体
     async def _save_tables_to_meta_db(
         self, meta_config: MetaConfig
     ) -> list[ColumnInfo]:
@@ -93,9 +96,9 @@ class MetaKnowledgeService:
             table_infos.append(table_info)
 
             # 字段类型按【表】查一次：一条 show columns 就能拿到全表类型
-            column_types: dict[str, str] = (
-                await self.dw_mysql_repository.get_column_types(table.name)
-            )
+            column_types: dict[
+                str, str
+            ] = await self.dw_mysql_repository.get_column_types(table.name)
 
             for column in table.columns:
                 # 示例值按【字段】查（一列一查），只取 10 条；全量取值留到 ES 那一步
@@ -123,6 +126,7 @@ class MetaKnowledgeService:
 
         return column_infos
 
+    # 表链路②：字段实体拆成语义入口 → 向量化 → 写 Qdrant
     async def _save_column_info_to_qdrant(self, column_infos: list[ColumnInfo]):
         """把字段实体拆成多个语义入口，向量化后写入字段向量 collection。"""
         await self.column_qdrant_repository.ensure_collection()
@@ -151,6 +155,7 @@ class MetaKnowledgeService:
         payloads = [point["payload"] for point in points]
         await self.column_qdrant_repository.upsert(ids, embeddings, payloads)
 
+    # 表链路③：按 sync 开关取字段真实取值 → 写 ES 全文索引
     async def _save_value_info_to_es(
         self, meta_config: MetaConfig, column_infos: list[ColumnInfo]
     ):
@@ -187,6 +192,7 @@ class MetaKnowledgeService:
 
         await self.value_es_repository.index(value_infos)
 
+    # 指标链路①：配置 → 指标实体 + 字段关联，写入 Meta MySQL 并返回指标实体
     async def _save_metrics_to_meta_db(
         self, meta_config: MetaConfig
     ) -> list[MetricInfo]:
@@ -222,6 +228,7 @@ class MetaKnowledgeService:
 
         return metric_infos
 
+    # 指标链路②：指标实体拆成语义入口 → 向量化 → 写 Qdrant
     async def _save_metrics_to_qdrant(self, metric_infos: list[MetricInfo]):
         """把指标拆成多个语义入口，向量化后写入指标向量 collection。"""
         await self.metric_qdrant_repository.ensure_collection()
@@ -248,6 +255,7 @@ class MetaKnowledgeService:
         payloads = [point["payload"] for point in points]
         await self.metric_qdrant_repository.upsert(ids, embeddings, payloads)
 
+    # 公共工具：分批向量化，两处 Qdrant 写入共用
     async def _embed_texts(self, texts: list[str]) -> list[list[float]]:
         """分批调用 Embedding 服务；返回顺序与输入文本顺序严格一致。"""
         embeddings: list[list[float]] = []
