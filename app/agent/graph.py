@@ -24,8 +24,10 @@ from app.agent.nodes.validate_sql import validate_sql
 from app.agent.state import DataAgentState
 from app.clients.embedding_client_manager import embedding_client_manager
 from app.clients.es_client_manager import es_client_manager
+from app.clients.mysql_client_manager import meta_mysql_client_manager
 from app.clients.qdrant_client_manager import qdrant_client_manager
 from app.repositories.es.value_es_repository import ValueESRepository
+from app.repositories.mysql.meta.meta_mysql_repository import MetaMySQLRepository
 from app.repositories.qdrant.column_qdrant_repository import ColumnQdrantRepository
 from app.repositories.qdrant.metric_qdrant_repository import MetricQdrantRepository
 
@@ -97,10 +99,11 @@ graph = graph_builder.compile()
 async def demo():
     """初始化召回依赖并跑一次图，打印各节点写出的进度。"""
 
-    # 字段/指标召回依赖 Qdrant 与 Embedding，字段取值召回依赖 Elasticsearch
+    # 三路召回依赖 Qdrant、Embedding 和 Elasticsearch，合并节点还要读 Meta MySQL
     qdrant_client_manager.init()
     embedding_client_manager.init()
     es_client_manager.init()
+    meta_mysql_client_manager.init()
 
     column_qdrant_repository = ColumnQdrantRepository(qdrant_client_manager.client)
     metric_qdrant_repository = MetricQdrantRepository(qdrant_client_manager.client)
@@ -113,24 +116,31 @@ async def demo():
         retrieved_column_infos=[],
         retrieved_metric_infos=[],
         retrieved_value_infos=[],
+        table_infos=[],
+        metric_infos=[],
         error=None,
     )
-    context = DataAgentContext(
-        column_qdrant_repository=column_qdrant_repository,
-        embedding_client=embedding_client_manager.client,
-        metric_qdrant_repository=metric_qdrant_repository,
-        value_es_repository=value_es_repository,
-    )
 
-    # stream_mode="custom" 接收各节点通过 runtime.stream_writer 写出的进度
-    async for chunk in graph.astream(
-        input=state, context=context, stream_mode="custom"
-    ):
-        print(chunk)
+    # 合并节点执行期间要用这个 session 反查元数据，所以一直持有到图跑完
+    async with meta_mysql_client_manager.session_factory() as meta_session:
+        context = DataAgentContext(
+            column_qdrant_repository=column_qdrant_repository,
+            embedding_client=embedding_client_manager.client,
+            metric_qdrant_repository=metric_qdrant_repository,
+            value_es_repository=value_es_repository,
+            meta_mysql_repository=MetaMySQLRepository(meta_session),
+        )
+
+        # stream_mode="custom" 接收各节点通过 runtime.stream_writer 写出的进度
+        async for chunk in graph.astream(
+            input=state, context=context, stream_mode="custom"
+        ):
+            print(chunk)
 
     # 关闭显式创建的异步客户端，避免本地调试时连接资源悬挂
     await qdrant_client_manager.close()
     await es_client_manager.close()
+    await meta_mysql_client_manager.close()
 
 
 if __name__ == "__main__":

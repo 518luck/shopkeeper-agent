@@ -5,6 +5,35 @@ from app.entities.metric_info import MetricInfo
 from app.entities.value_info import ValueInfo
 
 
+class MetricInfoState(TypedDict):
+    """面向提示词的指标结构，不再保留内部 id"""
+
+    name: str
+    description: str
+    relevant_columns: list[str]
+    alias: list[str]
+
+
+class ColumnInfoState(TypedDict):
+    """面向提示词的字段结构，只保留 SQL 生成需要理解的字段属性"""
+
+    name: str
+    type: str
+    role: str
+    examples: list
+    description: str
+    alias: list[str]
+
+
+class TableInfoState(TypedDict):
+    """表信息嵌套字段列表，便于后续按表组织 SQL 上下文"""
+
+    name: str
+    role: str
+    description: str
+    columns: list[ColumnInfoState]
+
+
 class DataAgentState(TypedDict):
     """一次问数链路中的核心状态"""
 
@@ -13,4 +42,8 @@ class DataAgentState(TypedDict):
     retrieved_column_infos: list[ColumnInfo]  # 检索到的字段信息
     retrieved_metric_infos: list[MetricInfo]  # 检索到的指标信息
     retrieved_value_infos: list[ValueInfo]  # 检索到的取值信息
+
+    table_infos: list[TableInfoState]  # 合并和补齐后的表结构上下文
+    metric_infos: list[MetricInfoState]  # 合并后的指标上下文
+
     error: str | None  # 校验 SQL 时出现的错误信息，通过校验时写入 None
