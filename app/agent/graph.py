@@ -73,13 +73,17 @@ def route_after_validate(state: DataAgentState) -> str:
     return "run_sql" if state.get("error") is None else "correct_sql"
 
 
+# 条件边：validate_sql 之后不是固定流转，按校验结果二选一
 graph_builder.add_conditional_edges(
-    source="validate_sql",
-    path=route_after_validate,
-    path_map={"run_sql": "run_sql", "correct_sql": "correct_sql"},
+    source="validate_sql",  # 分支起点
+    path=route_after_validate,  # 分支函数：读 state 里的 error 决定下一跳
+    path_map={
+        "run_sql": "run_sql",
+        "correct_sql": "correct_sql",
+    },  # 返回值 → 实际要去的节点名
 )
-graph_builder.add_edge("correct_sql", "run_sql")
-graph_builder.add_edge("run_sql", END)
+graph_builder.add_edge("correct_sql", "run_sql")  # 校正之后仍然要执行
+graph_builder.add_edge("run_sql", END)  # 执行完，图结束
 
 graph = graph_builder.compile()
 
