@@ -3,6 +3,7 @@ from typing import TypedDict
 from langchain_core.embeddings import Embeddings
 
 from app.repositories.es.value_es_repository import ValueESRepository
+from app.repositories.mysql.dw.dw_mysql_repository import DWMySQLRepository
 from app.repositories.mysql.meta.meta_mysql_repository import MetaMySQLRepository
 from app.repositories.qdrant.column_qdrant_repository import ColumnQdrantRepository
 from app.repositories.qdrant.metric_qdrant_repository import MetricQdrantRepository
@@ -21,3 +22,5 @@ class DataAgentContext(TypedDict):
     value_es_repository: ValueESRepository
     # 元数据库仓储，合并阶段用它按 id 补齐字段、表、主外键信息
     meta_mysql_repository: MetaMySQLRepository
+    # 数仓仓储，补全数据库方言和版本，后续校验与执行 SQL 也面向它
+    dw_mysql_repository: DWMySQLRepository

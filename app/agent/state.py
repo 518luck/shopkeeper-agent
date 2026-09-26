@@ -34,6 +34,21 @@ class TableInfoState(TypedDict):
     columns: list[ColumnInfoState]
 
 
+class DateInfoState(TypedDict):
+    """当前日期信息，用于把“去年”“本月”这类相对时间表达换成具体日期"""
+
+    date: str
+    weekday: str
+    quarter: str
+
+
+class DBInfoState(TypedDict):
+    """数仓方言与版本，决定函数名、日期运算和 limit 语法怎么写"""
+
+    dialect: str
+    version: str
+
+
 class DataAgentState(TypedDict):
     """一次问数链路中的核心状态"""
 
@@ -45,5 +60,8 @@ class DataAgentState(TypedDict):
 
     table_infos: list[TableInfoState]  # 合并和补齐后的表结构上下文
     metric_infos: list[MetricInfoState]  # 合并后的指标上下文
+
+    date_info: DateInfoState  # 当前日期 星期和季度信息
+    db_info: DBInfoState  # 数据库方言和版本信息
 
     error: str | None  # 校验 SQL 时出现的错误信息，通过校验时写入 None
