@@ -1,11 +1,16 @@
-"""问数智能体在图节点之间共享的状态结构。"""
+from typing import TypedDict
 
-from typing import NotRequired, TypedDict
+from app.entities.column_info import ColumnInfo
+from app.entities.metric_info import MetricInfo
+from app.entities.value_info import ValueInfo
 
 
 class DataAgentState(TypedDict):
-    """一次问数链路中的核心状态。"""
+    """一次问数链路中的核心状态"""
 
     query: str  # 用户输入的查询
-    # 校验通过前这个键不存在，所以声明为可选：读取时用 get 而不是下标
-    error: NotRequired[str | None]  # 校验SQL时出现的错误信息
+    keywords: list[str]  # 抽取的关键词
+    retrieved_column_infos: list[ColumnInfo]  # 检索到的字段信息
+    retrieved_metric_infos: list[MetricInfo]  # 检索到的指标信息
+    retrieved_value_infos: list[ValueInfo]  # 检索到的取值信息
+    error: str | None  # 校验 SQL 时出现的错误信息，通过校验时写入 None
