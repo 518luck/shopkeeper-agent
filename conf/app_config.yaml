@@ -56,9 +56,8 @@ es:
 # 大模型：关键词抽取、字段召回、SQL 生成都依赖它
 # 通过 OpenAI 兼容协议接入（代码里写的是 model_provider="openai"），换服务商只改这一段
 llm:
-  model_name: deepseek-flash            # DeepSeek 模型名；旧名 deepseek-v4-flash 已下线
-  # ! Key 不写在这里。真实值放在项目根目录的 .env（已被 .gitignore 排除）。
+  model_name: deepseek/deepseek-v4.1-flash            # DeepSeek 模型名；旧名 deepseek-v4-flash 已下线
   #   需在加载配置前调用 load_dotenv()，否则会取到逗号后的兜底值，调用时报 401。
   #   兜底值保证环境变量缺失时配置仍能加载 —— 不带默认值的写法会直接抛错。
   api_key: ${oc.env:LLM_API_KEY,no-key}
-  base_url: https://api.deepseek.com    # OpenAI 格式；加 /v1 后缀亦可
+  base_url: https://api.commandcode.ai/provider/v1    # OpenAI 格式；加 /v1 后缀亦可
