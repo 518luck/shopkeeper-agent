@@ -5,9 +5,13 @@
 负责保存字段和指标之间的关联关系，方便后续从字段追踪相关指标，或者从指标回查依赖字段
 """
 
+# 列类型：String → varchar
 from sqlalchemy import String
+
+# Mapped 标注 Python 侧类型，mapped_column 定义数据库侧的真实列
 from sqlalchemy.orm import Mapped, mapped_column
 
+# 项目统一的 ORM 基类，继承它才会被映射成表
 from app.models.base import Base
 
 

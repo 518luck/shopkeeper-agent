@@ -4,9 +4,13 @@
 负责定义元数据库中表元数据表的结构，保存纳入知识库的表名、角色和说明
 """
 
+# 列类型：String → varchar，Text → text
 from sqlalchemy import String, Text
+
+# Mapped 标注 Python 侧类型，mapped_column 定义数据库侧的真实列
 from sqlalchemy.orm import Mapped, mapped_column
 
+# 项目统一的 ORM 基类，继承它才会被映射成表
 from app.models.base import Base
 
 

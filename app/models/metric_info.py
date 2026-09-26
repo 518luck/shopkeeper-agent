@@ -5,10 +5,16 @@
 负责保存指标名称 指标说明 指标别名，以及指标和底层字段之间的关联关系
 """
 
+# 列类型：String → varchar，Text → text
 from sqlalchemy import String, Text
+
+# Mapped 标注 Python 侧类型，mapped_column 定义数据库侧的真实列
 from sqlalchemy.orm import Mapped, mapped_column
+
+# JSON 对应 MySQL 的 JSON 列，用来存列表（relevant_columns / alias）
 from sqlalchemy.types import JSON
 
+# 项目统一的 ORM 基类，继承它才会被映射成表
 from app.models.base import Base
 
 

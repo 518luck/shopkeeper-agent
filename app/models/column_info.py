@@ -5,12 +5,19 @@
 保存字段级元数据，包括字段类型 字段角色 示例值 说明 别名 以及所属表
 """
 
+# Any：examples 里装的取值类型不定（可能是数字/字符串/日期）
 from typing import Any
 
+# 列类型：String → varchar，Text → text
 from sqlalchemy import String, Text
+
+# Mapped 标注 Python 侧类型，mapped_column 定义数据库侧的真实列
 from sqlalchemy.orm import Mapped, mapped_column
+
+# JSON 对应 MySQL 的 JSON 列，用来存列表（examples / alias）
 from sqlalchemy.types import JSON
 
+# 项目统一的 ORM 基类，继承它才会被映射成表
 from app.models.base import Base
 
 
