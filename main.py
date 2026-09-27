@@ -6,9 +6,9 @@ FastAPI 应用入口
 也会从这里逐步接入。
 """
 
-from app.api.lifespan import lifespan
 from fastapi import FastAPI
 
+from app.api.lifespan import lifespan
 from app.api.routers.query_router import query_router
 
 # 创建 FastAPI 应用对象，所有路由、中间件和生命周期事件最终都会注册到这里

@@ -4,7 +4,8 @@ from langchain_core.embeddings import Embeddings
 
 from app.agent.context import DataAgentContext
 from app.agent.graph import graph
-from app.agent.state import DBInfoState, DataAgentState, DateInfoState
+from app.agent.state import DataAgentState, DateInfoState, DBInfoState
+from app.core.log import logger
 from app.repositories.es.value_es_repository import ValueESRepository
 from app.repositories.mysql.dw.dw_mysql_repository import DWMySQLRepository
 from app.repositories.mysql.meta.meta_mysql_repository import MetaMySQLRepository
@@ -69,7 +70,9 @@ class QueryService:
                 # SSE 要求每条消息以 data: 开头，并以两个换行符结束
                 # ensure_ascii=False 保留中文进度文案，default=str 兜底处理日期等非 JSON 类型
                 yield f"data: {json.dumps(chunk, ensure_ascii=False, default=str)}\n\n"
-        except Exception as e:
-            # 流式接口已经开始返回后不能再改 HTTP 状态码，因此把异常也包装成一条 SSE 消息
+        # ! 流式边界：响应头已经发出，无法再改状态码，所以任何异常都必须转成 error 事件
+        except Exception as e:  # noqa: BLE001
+            # 先把完整堆栈记进日志，再把失败作为一条 SSE 事件发给前端
+            logger.exception("问数链路执行失败")
             error = {"type": "error", "message": str(e)}
             yield f"data: {json.dumps(error, ensure_ascii=False, default=str)}\n\n"

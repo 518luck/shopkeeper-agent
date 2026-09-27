@@ -1,11 +1,11 @@
 from typing import Annotated
 
-from app.api.dependencies import get_query_service
-from app.services.query_service import QueryService
 from fastapi import APIRouter, Depends
 from starlette.responses import StreamingResponse
 
+from app.api.dependencies import get_query_service
 from app.api.schemas.query_schema import QuerySchema
+from app.services.query_service import QueryService
 
 # 当前模块只维护查询相关接口，避免后续所有 API 都挤在 main.py 中
 query_router = APIRouter()
