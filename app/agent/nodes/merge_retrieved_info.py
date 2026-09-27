@@ -80,14 +80,14 @@ async def merge_retrieved_info(
     # 5. 补齐主外键字段
     # 主外键通常不会出现在用户问题里，单靠向量召回容易漏掉；
     # 但多表查询的 Join 路径必须依赖它们，所以每张候选表都要兜底补齐。
-    for table_id in table_to_columns_map:
-        key_columns: list[
-            ColumnInfo
-        ] = await meta_mysql_repository.get_key_columns_by_table_id(table_id)
-        column_ids = [column_info.id for column_info in table_to_columns_map[table_id]]
+    for table_id, column_infos in table_to_columns_map.items():
+        key_columns: list[ColumnInfo] = (
+            await meta_mysql_repository.get_key_columns_by_table_id(table_id)
+        )
+        column_ids = [column_info.id for column_info in column_infos]
         for key_column in key_columns:
             if key_column.id not in column_ids:
-                table_to_columns_map[table_id].append(key_column)
+                column_infos.append(key_column)
 
     # 6. 生成表结构上下文
     # 数据库实体里可能包含入库和索引用字段，传给模型前只保留必要信息，
