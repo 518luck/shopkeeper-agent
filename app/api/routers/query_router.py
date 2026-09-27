@@ -1,13 +1,8 @@
-"""
-问数查询接口路由
+from typing import Annotated
 
-负责定义前端访问的 `/api/query` 接口，并用流式响应模拟智能体执行过程。
-本章先不接入真实 QueryService，重点是把 APIRouter、请求体解析和 SSE 返回格式串起来。
-"""
-
-import asyncio
-
-from fastapi import APIRouter
+from app.api.dependencies import get_query_service
+from app.services.query_service import QueryService
+from fastapi import APIRouter, Depends
 from starlette.responses import StreamingResponse
 
 from app.api.schemas.query_schema import QuerySchema
@@ -16,23 +11,15 @@ from app.api.schemas.query_schema import QuerySchema
 query_router = APIRouter()
 
 
-async def fake_streamer():
-    """模拟智能体逐步返回执行进度的异步生成器"""
-
-    # 先用 10 个 step 模拟执行过程，方便在浏览器或 Apifox 中观察流式效果
-    for i in range(10):
-        # 暂停 1 秒只是为了让流式返回更容易被观察；真实项目中这里会被节点耗时代替
-        await asyncio.sleep(1)
-
-        # SSE 每条消息以 data: 开头，并用两个换行符结束
-        # StreamingResponse 会把每次 yield 的内容持续写给客户端
-        yield f"data: step:{i}\n\n"
-
-
 @query_router.post("/api/query")
-async def query_handler(query: QuerySchema):
-    """接收用户自然语言问题，并以 SSE 形式持续返回处理进度"""
-
-    # query 参数由 FastAPI 根据请求体自动解析为 QuerySchema 对象
-    # media_type 指定为 text/event-stream，前端才能按 SSE 流处理响应
-    return StreamingResponse(fake_streamer(), media_type="text/event-stream")
+async def query_handler(
+    # FastAPI 会把前端 JSON 请求体自动解析成 QuerySchema
+    query: QuerySchema,
+    # FastAPI 会调用 get_query_service，递归组装它依赖的仓储和客户端
+    query_service: Annotated[QueryService, Depends(get_query_service)],
+):
+    return StreamingResponse(
+        # query.query 是用户问题字符串；QueryService.query 返回异步生成器
+        query_service.query(query.query),
+        media_type="text/event-stream",
+    )
