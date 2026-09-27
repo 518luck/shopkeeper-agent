@@ -63,3 +63,8 @@ class DWMySQLRepository:
         """用 EXPLAIN 让数据库提前解析 SQL，发现语法 表名 字段名等错误"""
         sql = f"explain {sql}"
         await self.session.execute(text(sql))
+
+    async def run(self, sql: str) -> list[dict]:
+        """执行最终 SQL，并把 SQLAlchemy 行对象转换成前端更易消费的字典列表"""
+        result = await self.session.execute(text(sql))
+        return [dict(row) for row in result.mappings().fetchall()]
