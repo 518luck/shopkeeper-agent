@@ -125,6 +125,7 @@ async def demo():
         metric_infos=[],
         date_info=DateInfoState(date="", weekday="", quarter=""),
         db_info=DBInfoState(dialect="", version=""),
+        sql="",
         error=None,
     )
 
