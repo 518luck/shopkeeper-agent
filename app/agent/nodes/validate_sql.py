@@ -6,6 +6,7 @@ SQL 校验节点
 """
 
 from langgraph.runtime import Runtime
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.agent.context import DataAgentContext
 from app.agent.state import DataAgentState
@@ -30,7 +31,7 @@ async def validate_sql(state: DataAgentState, runtime: Runtime[DataAgentContext]
         await dw_mysql_repository.validate(sql)
         logger.info("SQL语法正确")
         return {"error": None}
-    except Exception as e:
-        # 不抛出异常中断图执行，而是把错误写入状态，供条件分支进入 correct_sql
+    except SQLAlchemyError as e:
+        # 只把数据库拒绝这条 SQL 的原因写入状态交给 correct_sql；其它异常照常抛出
         logger.info(f"SQL语法错误：{e!s}")
         return {"error": str(e)}
